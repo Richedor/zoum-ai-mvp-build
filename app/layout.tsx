@@ -5,12 +5,14 @@ import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { Providers } from "@/components/providers"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { Toaster } from "@/components/ui/toaster"
 import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "ZoumAI - Gestion de Flotte",
-  description: "Plateforme de gestion de flotte intelligente",
+  title: "ZoumAI - Boîtier Intelligent pour la Sécurité des Flottes",
+  description:
+    "Sécurisez vos trajets, sauvez des vies et révolutionnez la gestion de vos flottes en Afrique avec ZoumAI",
   generator: "v0.app",
 }
 
@@ -20,12 +22,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr">
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" className="dark">
+      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}>
         <ErrorBoundary>
           <Suspense fallback={null}>
             <Providers>
-              <div className="flex h-screen">{children}</div>
+              {children}
+              <Toaster />
             </Providers>
           </Suspense>
         </ErrorBoundary>
