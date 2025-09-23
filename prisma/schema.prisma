@@ -8,202 +8,177 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String   @id
+  email     String
   name      String
-  password  String
-  role      UserRole @default(DRIVER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  raw_json  Json?
+  deleted_at DateTime?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("users_sync")
+  @@schema("neon_auth")
+}
+
+model Driver {
+  id                      Int       @id @default(autoincrement())
+  user_id                 String?
+  first_name              String?
+  last_name               String?
+  phone                   String?
+  license_number          String?
+  license_expiry          DateTime? @db.Date
+  experience_years        Int?
+  hire_date               DateTime? @db.Date
+  status                  String?
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
+  email                   String?
+  password_hash           String?
+  photo_url               String?
+  emergency_contact_name  String?
+  emergency_contact_phone String?
+  last_medical_visit      DateTime? @db.Date
+  notes                   String?
+  role                    String?   @default("driver")
 
   // Relations
   trips              Trip[]
-  maintenanceTickets MaintenanceTicket[]
+  vehicle_assignments VehicleAssignment[]
+  alerts             Alert[]
 
-  @@map("users")
+  @@map("drivers")
 }
 
 model Vehicle {
-  id           String        @id @default(cuid())
-  plateNumber  String        @unique
-  model        String
-  year         Int
-  status       VehicleStatus @default(AVAILABLE)
-  lastLat      Float?
-  lastLng      Float?
-  lastUpdate   DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id           Int        @id @default(autoincrement())
+  make         String?
+  model        String?
+  year         Int?
+  license_plate String?
+  vehicle_type String?
+  fuel_type    String?
+  capacity     Int?
+  mileage      Int?
+  status       String?
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
 
   // Relations
-  trips              Trip[]
-  telemetry          Telemetry[]
+  trips               Trip[]
+  vehicle_assignments VehicleAssignment[]
+  maintenance_records MaintenanceRecord[]
   alerts             Alert[]
-  maintenanceTickets MaintenanceTicket[]
 
   @@map("vehicles")
 }
 
 model Trip {
-  id          String     @id @default(cuid())
-  startPoint  String
-  endPoint    String
-  status      TripStatus @default(PLANNED)
-  startTime   DateTime?
-  endTime     DateTime?
-  distance    Float?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  // Foreign keys
-  driverId  String
-  vehicleId String
+  id                        Int       @id @default(autoincrement())
+  driver_id                 Int?
+  vehicle_id                Int?
+  route_id                  Int?
+  start_time                DateTime?
+  end_time                  DateTime?
+  status                    String?
+  passenger_count           Int?
+  actual_distance_km        Decimal?
+  actual_duration_minutes   Int?
+  fuel_consumed_liters      Decimal?
+  notes                     String?
+  created_at                DateTime  @default(now())
+  updated_at                DateTime  @updatedAt
 
   // Relations
-  driver         User               @relation(fields: [driverId], references: [id])
-  vehicle        Vehicle            @relation(fields: [vehicleId], references: [id])
-  checklistItems TripChecklistItem[]
+  driver  Driver?  @relation(fields: [driver_id], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicle_id], references: [id])
+  route   Route?   @relation(fields: [route_id], references: [id])
+  alerts  Alert[]
 
   @@map("trips")
 }
 
-model ChecklistItemTemplate {
-  id          String @id @default(cuid())
-  name        String
-  description String
-  required    Boolean @default(true)
-  order       Int
+model Route {
+  id                         Int     @id @default(autoincrement())
+  name                       String?
+  start_location             String?
+  end_location               String?
+  start_latitude             Decimal?
+  start_longitude            Decimal?
+  end_latitude               Decimal?
+  end_longitude              Decimal?
+  distance_km                Decimal?
+  estimated_duration_minutes Int?
+  difficulty_level           String?
+  route_type                 String?
+  created_at                 DateTime @default(now())
+  updated_at                 DateTime @updatedAt
 
   // Relations
-  tripChecklistItems TripChecklistItem[]
+  trips  Trip[]
+  alerts Alert[]
 
-  @@map("checklist_item_templates")
+  @@map("routes")
 }
 
-model TripChecklistItem {
-  id        String   @id @default(cuid())
-  checked   Boolean  @default(false)
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Foreign keys
-  tripId     String
-  templateId String
+model VehicleAssignment {
+  id              Int       @id @default(autoincrement())
+  driver_id       Int?
+  vehicle_id      Int?
+  assigned_date   DateTime? @db.Date
+  unassigned_date DateTime? @db.Date
+  is_primary      Boolean?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
 
   // Relations
-  trip     Trip                   @relation(fields: [tripId], references: [id])
-  template ChecklistItemTemplate @relation(fields: [templateId], references: [id])
+  driver  Driver?  @relation(fields: [driver_id], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicle_id], references: [id])
 
-  @@unique([tripId, templateId])
-  @@map("trip_checklist_items")
+  @@map("vehicle_assignments")
 }
 
-model Telemetry {
-  id        String   @id @default(cuid())
-  lat       Float
-  lng       Float
-  speed     Float?
-  fuel      Float?
-  timestamp DateTime @default(now())
-
-  // Foreign keys
-  vehicleId String
+model MaintenanceRecord {
+  id                   Int       @id @default(autoincrement())
+  vehicle_id           Int?
+  maintenance_type     String?
+  description          String?
+  service_date         DateTime? @db.Date
+  cost                 Decimal?
+  service_provider     String?
+  technician_name      String?
+  mileage_at_service   Int?
+  next_service_due     DateTime? @db.Date
+  status               String?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
 
   // Relations
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicle_id], references: [id])
 
-  @@map("telemetry")
+  @@map("maintenance_records")
 }
 
 model Alert {
-  id          String      @id @default(cuid())
-  type        AlertType
-  message     String
-  severity    AlertLevel  @default(LOW)
-  resolved    Boolean     @default(false)
-  resolvedAt  DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  // Foreign keys
-  vehicleId String
+  id          Int       @id @default(autoincrement())
+  title       String?
+  description String?
+  type        String?
+  severity    String?
+  status      String?
+  driver_id   Int?
+  vehicle_id  Int?
+  trip_id     Int?
+  route_id    Int?
+  resolved_by String?
+  resolved_at DateTime?
+  created_at  DateTime  @default(now())
 
   // Relations
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  driver  Driver?  @relation(fields: [driver_id], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicle_id], references: [id])
+  trip    Trip?    @relation(fields: [trip_id], references: [id])
+  route   Route?   @relation(fields: [route_id], references: [id])
 
-  @@unique([vehicleId, type], name: "vehicleId_type")
   @@map("alerts")
-}
-
-model MaintenanceTicket {
-  id          String            @id @default(cuid())
-  title       String
-  description String
-  status      MaintenanceStatus @default(PENDING)
-  priority    Priority          @default(MEDIUM)
-  scheduledAt DateTime?
-  completedAt DateTime?
-  cost        Float?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-
-  // Foreign keys
-  vehicleId   String
-  assignedToId String?
-
-  // Relations
-  vehicle    Vehicle @relation(fields: [vehicleId], references: [id])
-  assignedTo User?   @relation(fields: [assignedToId], references: [id])
-
-  @@map("maintenance_tickets")
-}
-
-enum UserRole {
-  DRIVER
-  MANAGER
-}
-
-enum VehicleStatus {
-  AVAILABLE
-  IN_USE
-  MAINTENANCE
-  OUT_OF_SERVICE
-}
-
-enum TripStatus {
-  PLANNED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
-
-enum AlertType {
-  MAINTENANCE
-  FUEL_LOW
-  SPEED_LIMIT
-  GEOFENCE
-  ENGINE_WARNING
-  TIRE_PRESSURE
-}
-
-enum AlertLevel {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-enum MaintenanceStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
-
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
 }
