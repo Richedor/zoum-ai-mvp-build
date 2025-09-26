@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "@/lib/auth-server"
 import { getDriverTrips } from "@/lib/db"
